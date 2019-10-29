@@ -66,3 +66,9 @@ app.get('/urls.json', (req, res) => {
 app.get('/hello', (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
+
+app.post(`/urls/:shortURL/delete`, (req, res) => {
+  let shortcut = req.params.shortURL;
+  delete urlDatabase[shortcut]
+  res.redirect('/urls')
+})
