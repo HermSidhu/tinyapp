@@ -47,7 +47,11 @@ app.get('/urls/:shortURL', (req, res) => {
 
 app.get('/u/:shortURL', (req, res) => {
   let shortcut = req.params.shortURL;
-  res.redirect(urlDatabase[shortcut])
+  if (urlDatabase[shortcut].startsWith("http://")) {
+    res.redirect(urlDatabase[shortcut])
+} else { 
+  res.redirect("http://" + urlDatabase[shortcut])
+}
   console.log(shortcut + urlDatabase[shortcut]);
  });
 
@@ -70,5 +74,11 @@ app.get('/hello', (req, res) => {
 app.post(`/urls/:shortURL/delete`, (req, res) => {
   let shortcut = req.params.shortURL;
   delete urlDatabase[shortcut]
+  res.redirect('/urls')
+})
+
+app.post('/urls/:shortURL', (req, res) => {
+  let shortcut = req.params.shortURL;
+  urlDatabase[shortcut] = req.body.longURL
   res.redirect('/urls')
 })
