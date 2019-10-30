@@ -2,6 +2,7 @@ const bodyParser = require("body-parser");
 const express = require('express');
 const app = express();
 const PORT = 8080;
+const cookieParser = require("cookie-parser")
 
 function generateRandomString(length) {
     let result = '';
