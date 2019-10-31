@@ -44,8 +44,16 @@ app.get('/login', (req, res) => {
 })
 
 app.post('/login', (req, res) => {
-  res.cookie('username', req.body.username)
-  res.redirect('/urls')
+  console.log(req.body.email)
+  for (userid in users) {
+    console.log('user', userid, users[userid].email)
+    if (req.body.email === users[userid].email && req.body.password === users[userid].password) {
+      res.cookie('userid', req.body.userid)
+      res.redirect("/urls")
+    };
+  };
+  res.send("LOGIN INCORRECT");
+  res.sendStatus(400);
 });
 
 app.post('/logout', (req, res) => {
@@ -70,7 +78,6 @@ app.post('/register', (req, res) => {
       return;
     }
   }
-  console.log('here line 71')
   let randomID = generateRandomString(10);
   users[randomID] = {
     id : randomID,
@@ -94,12 +101,12 @@ app.get('/urls', (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = { username: req.cookies.userid }
+  let templateVars = { user: req.cookies.userid }
   res.render("urls_new", templateVars);
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies.userid };
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: req.cookies.userid };
   console.log(req.params)
   res.render("urls_show", templateVars);
 });
