@@ -38,6 +38,11 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+app.get('/login', (req, res) => {
+  let templateVars = { urls: urlDatabase, user: users[req.cookies.userid] };
+  res.render('login', templateVars);
+})
+
 app.post('/login', (req, res) => {
   res.cookie('username', req.body.username)
   res.redirect('/urls')
