@@ -127,8 +127,11 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, 
-                      longURL: urlDatabase[req.params.shortURL].longURL, user: req.cookies.userid };
+  let templateVars = { 
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL].longURL, 
+    user: users[req.cookies.userid] 
+  };
   console.log("!!!!!!!!!!", templateVars)
   res.render("urls_show", templateVars);
 });
@@ -161,12 +164,21 @@ app.get('/hello', (req, res) => {
 
 app.post(`/urls/:shortURL/delete`, (req, res) => {
   let shortcut = req.params.shortURL;
-  delete urlDatabase[shortcut]
-  res.redirect('/urls')
+  if (urlDatabase[shortcut].userid === req.cookies.userid) {
+    delete urlDatabase[shortcut]
+    res.redirect('/urls')
+  } else {
+    res.redirect('/urls')
+  }
 })
 
+// EDIT function
 app.post('/urls/:shortURL', (req, res) => {
   let shortcut = req.params.shortURL;
-  urlDatabase[shortcut].longURL = req.body.longURL
-  res.redirect('/urls')
+  if (urlDatabase[shortcut].userid === req.cookies.userid) {
+    urlDatabase[shortcut].longURL = req.body.longURL
+    res.redirect('/urls')
+  } else {
+    res.redirect('/urls')
+  }
 })
