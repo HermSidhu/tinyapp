@@ -34,15 +34,33 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser())
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userid: "aJ48lW" },
+  "9sm5xK": { longURL: "http://www.google.com", userid: "aJ48lW" }
 };
+
+const urlsForUser = function(id) {
+  let userURLS = {};
+  for (let shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userid === id) {
+      userURLS[shortURL] = urlDatabase[shortURL]
+    }
+  }
+  return userURLS;
+}
 
 app.get('/login', (req, res) => {
   let templateVars = { urls: urlDatabase, user: users[req.cookies.userid] };
   console.log(req.cookies)
   res.render('login', templateVars);
 })
+
+app.use('/urls', function (req, res, next) {
+  if (!req.cookies.userid) {
+    res.redirect('/login')
+  } else {
+    next();
+  }
+});
 
 app.post('/login', (req, res) => {
   console.log('users:', users);
@@ -94,12 +112,12 @@ app.post('/register', (req, res) => {
 app.post('/urls', (req, res) => {
   let id = generateRandomString(6)
   console.log(req.body);
-  urlDatabase[id] = req.body.longURL;
+  urlDatabase[id] = { longURL: req.body.longURL, userid: req.cookies.userid };
   res.redirect(`/urls/${id}`)
 });
 
 app.get('/urls', (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.cookies.userid] };
+  let templateVars = { urls: urlsForUser(req.cookies.userid), user: users[req.cookies.userid] };
   res.render('urls_index', templateVars);
 });
 
@@ -109,19 +127,20 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: req.cookies.userid };
-  console.log(req.params)
+  let templateVars = { shortURL: req.params.shortURL, 
+                      longURL: urlDatabase[req.params.shortURL].longURL, user: req.cookies.userid };
+  console.log("!!!!!!!!!!", templateVars)
   res.render("urls_show", templateVars);
 });
 
 app.get('/u/:shortURL', (req, res) => {
   let shortcut = req.params.shortURL;
-  if (urlDatabase[shortcut].startsWith("http://")) {
-    res.redirect(urlDatabase[shortcut])
+  if (urlDatabase[shortcut].longURL.startsWith("http://")) {
+    res.redirect(urlDatabase[shortcut].longURL)
 } else { 
-  res.redirect("http://" + urlDatabase[shortcut])
+  res.redirect("http://" + urlDatabase[shortcut].longURL)
 }
-  console.log(shortcut + urlDatabase[shortcut]);
+  console.log(shortcut + urlDatabase[shortcut].longURL);
 });
 
 app.get('/', (req, res) => {
@@ -148,6 +167,6 @@ app.post(`/urls/:shortURL/delete`, (req, res) => {
 
 app.post('/urls/:shortURL', (req, res) => {
   let shortcut = req.params.shortURL;
-  urlDatabase[shortcut] = req.body.longURL
+  urlDatabase[shortcut].longURL = req.body.longURL
   res.redirect('/urls')
 })
