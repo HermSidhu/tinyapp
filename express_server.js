@@ -2,7 +2,8 @@ const bodyParser = require("body-parser");
 const express = require('express');
 const app = express();
 const PORT = 8080;
-const cookieParser = require("cookie-parser")
+// const cookieParser = require("cookie-parser")
+const cookieSession = require('cookie-session')
 const bcrypt = require('bcrypt');
 
 function generateRandomString(length) {
@@ -32,7 +33,12 @@ app.set('view engine', 'ejs')
 
 app.use(bodyParser.urlencoded({extended: true}));
 
-app.use(cookieParser())
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
+
+// app.use(cookieParser())
 
 const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userid: "aJ48lW" },
@@ -50,13 +56,12 @@ const urlsForUser = function(id) {
 }
 
 app.get('/login', (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.cookies.userid] };
-  console.log(req.cookies)
+  let templateVars = { urls: urlDatabase, user: users[req.session.userid] };
   res.render('login', templateVars);
 })
 
 app.use('/urls', function (req, res, next) {
-  if (!req.cookies.userid) {
+  if (!req.session.userid) {
     res.redirect('/login')
   } else {
     next();
@@ -71,7 +76,7 @@ app.post('/login', (req, res) => {
       req.body.email === users[userid].email && 
       bcrypt.compareSync(req.body.password, users[userid].password) 
     ) {
-      res.cookie('userid', userid)
+      req.session.userid = userid;
       console.log("!!!!!!!!!",req.body)
       res.redirect("/urls")
       return;
@@ -82,12 +87,12 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('userid', req.body.userid)
+  req.session = null;
   res.redirect('/urls')
 })
 
 app.get('/register', (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.cookies.userid] };
+  let templateVars = { urls: urlDatabase, user: users[req.session.userid] };
   res.render('register', templateVars);
 });
 
@@ -109,25 +114,24 @@ app.post('/register', (req, res) => {
     email: req.body.email,
     password: bcrypt.hashSync(req.body.password, 10),
   }
-  console.log(users[randomID])
-  res.cookie('userid', randomID);
+  req.session.userid = randomID;
   res.redirect('/urls');
 });
 
 app.post('/urls', (req, res) => {
   let id = generateRandomString(6)
   console.log(req.body);
-  urlDatabase[id] = { longURL: req.body.longURL, userid: req.cookies.userid };
+  urlDatabase[id] = { longURL: req.body.longURL, userid: req.session.userid };
   res.redirect(`/urls/${id}`)
 });
 
 app.get('/urls', (req, res) => {
-  let templateVars = { urls: urlsForUser(req.cookies.userid), user: users[req.cookies.userid] };
+  let templateVars = { urls: urlsForUser(req.session.userid), user: users[req.session.userid] };
   res.render('urls_index', templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = { user: users[req.cookies.userid] }
+  let templateVars = { user: users[req.session.userid] }
   res.render("urls_new", templateVars);
 });
 
@@ -135,7 +139,7 @@ app.get('/urls/:shortURL', (req, res) => {
   let templateVars = { 
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL, 
-    user: users[req.cookies.userid] 
+    user: users[req.session.userid] 
   };
   console.log("!!!!!!!!!!", templateVars)
   res.render("urls_show", templateVars);
@@ -169,7 +173,7 @@ app.get('/hello', (req, res) => {
 
 app.post(`/urls/:shortURL/delete`, (req, res) => {
   let shortcut = req.params.shortURL;
-  if (urlDatabase[shortcut].userid === req.cookies.userid) {
+  if (urlDatabase[shortcut].userid === req.session.userid) {
     delete urlDatabase[shortcut]
     res.redirect('/urls')
   } else {
@@ -180,7 +184,7 @@ app.post(`/urls/:shortURL/delete`, (req, res) => {
 // EDIT function
 app.post('/urls/:shortURL', (req, res) => {
   let shortcut = req.params.shortURL;
-  if (urlDatabase[shortcut].userid === req.cookies.userid) {
+  if (urlDatabase[shortcut].userid === req.session.userid) {
     urlDatabase[shortcut].longURL = req.body.longURL
     res.redirect('/urls')
   } else {
